@@ -40,7 +40,7 @@ pub fn ed25519_verify<let MSG_MAX_LEN: u32>(
 /// Encode an Ed25519 point into its 32-byte compressed form (RFC 8032 5.1.2):
 /// the little-endian y-coordinate with the low bit of x stored in the most
 /// significant bit. Valid points have y < 2^255, so that bit is always free.
-fn compress(point: Ed25519) -> [u8; 32] {
+pub fn compress(point: Ed25519) -> [u8; 32] {
     let mut enc: [u8; 32] = point.y.to_le_bytes();
     let x_bytes: [u8; 32] = point.x.to_le_bytes();
     let x_sign = x_bytes[0] & 1;

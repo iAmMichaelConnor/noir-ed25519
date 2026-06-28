@@ -14,14 +14,14 @@ For example usage see `test.nr`
 > [!IMPORTANT]
 > Ed25519 is not efficient for Barretenberg proving. If you can use another signature algorithm you should.
 
-Circuit cost of a single `ed25519_verify` call, by maximum message length. The
+Circuit cost of a single `ed25519_verify` call by maximum message length. The
 SHA-512 hash of the message preimage is the main driver of the growth with
-message size; the curve arithmetic is fixed.
+message size.
 
 | Max message length | ACIR opcodes | Circuit size (gates) |
 | -----------------: | -----------: | -------------------: |
-| 32 bytes           |       65,980 |              228,170 |
-| 128 bytes          |       79,612 |              257,566 |
+| 32 bytes           |       66,001 |              228,192 |
+| 128 bytes          |       79,633 |              257,588 |
 
 Reproduce with `./scripts/build-gates-report.sh` (requires `nargo`, `bb`, and
 `jq`). Benchmark entry points live in `src/benchmarks/`.

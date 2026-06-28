@@ -1,0 +1,7 @@
+target
+
+# Benchmark artifacts (see scripts/build-gates-report.sh)
+export
+gates_report.json
+benchmark-opcodes.json
+benchmark-circuit.json

@@ -1,7 +1,7 @@
+use super::ed25519_verify;
 use bignum::{bignum::BigNum, ED25519_Fq as Fq};
 use edwards_bignum::ed25519::Ed25519;
 use edwards_bignum::ScalarField;
-use super::ed25519_verify;
 
 // Test vectors from RFC 8032 Section 7.1 (Ed25519). The public keys and
 // signature R points are given in the RFC in compressed (32-byte) form; they

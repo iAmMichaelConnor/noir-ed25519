@@ -1,6 +1,6 @@
 use std::ops::Neg;
 
-use bignum::{bignum::BigNum, ED25519_Fr as Fr};
+use bignum::{bignum::BigNum, ED25519_Fq as Fq, ED25519_Fr as Fr};
 use edwards_bignum::{CurveTrait, ScalarField, TECurveParameterTrait};
 use edwards_bignum::ed25519::{Ed25519, Ed25519Params};
 use sha512::sha512;
@@ -96,11 +96,23 @@ fn decode_s(bytes: [u8; 32]) -> (Field, bool) {
 /// the little-endian y-coordinate with the low bit of x stored in the most
 /// significant bit. Valid points have y < 2^255, so that bit is always free.
 pub fn compress(point: Ed25519) -> [u8; 32] {
+    assert_reduced(point.x);
+    assert_reduced(point.y);
     let mut enc: [u8; 32] = point.y.to_le_bytes();
     let x_bytes: [u8; 32] = point.x.to_le_bytes();
     let x_sign = x_bytes[0] & 1;
     enc[31] = enc[31] | (x_sign << 7);
     enc
+}
+
+/// `to_le_bytes` also encodes unreduced coordinates (up to 2^256), so check the
+/// coordinate is below the modulus for the encoding to be canonical.
+///
+/// `validate_in_range` bounds the limbs (120 bits each, 15 bits for the top
+/// one), so BigNum's `<` then compares the integers they encode exactly.
+fn assert_reduced(value: Fq) {
+    value.validate_in_range();
+    assert(value < Fq::modulus(), "Ed25519 coordinate is not reduced");
 }
 
 /// Reduce a 64-byte little-endian integer (the SHA-512 digest) modulo the

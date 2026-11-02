@@ -1,6 +1,6 @@
 use crate::ed25519_verify;
-use edwards_bignum::ScalarField;
 use edwards_bignum::ed25519::Ed25519;
+use edwards_bignum::ScalarField;
 
 #[export]
 fn bench_ed25519_verify_32(

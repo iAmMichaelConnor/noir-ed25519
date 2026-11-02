@@ -425,3 +425,64 @@ fn test_decode_s_top_byte() {
         assert(!in_range);
     }
 }
+
+#[test(should_fail_with = "Ed25519 coordinate is not reduced")]
+// A signature by the TEST 1 key whose R is the identity with x stored as q. Without the
+// reduction check R compresses to the non-canonical encoding 0x01 0x00 .. 0x00 0x80.
+fn test_noncanonical_sig_point_rejected() {
+    let pubkey = Ed25519::from((
+        Fq::from_limbs([0x13d47253187c24b12786bd777645ce, 0xe09a2b9d34292297e08d60d0f620c5, 0x55d0]),
+        Fq::from_limbs(
+            [0x764c9d3fe4bd5b70ab18201985ad7, 0x7f7681a02af2523a6daf372e10e3a, 0x1a51],
+        ),
+    ));
+    let sig_point = Ed25519::from((
+        Fq::from_limbs([0xffffffffffffffffffffffffffffed, 0xffffffffffffffffffffffffffffff, 0x7fff]),
+        Fq::from_limbs([1, 0, 0]),
+    ));
+    // S = 4888277533957209549533771696681529895558760197264370786725260163911039916551
+    let sig_s_bytes: [u8; 32] = [
+        7, 26, 93, 164, 150, 233, 76, 102, 175, 187, 78, 20, 101, 17, 146, 163, 219, 170, 186, 231,
+        17, 139, 145, 92, 24, 46, 196, 243, 194, 170, 206, 10,
+    ];
+
+    let message: BoundedVec<u8, 1> = BoundedVec::new();
+    let _ = ed25519_verify(pubkey, sig_s_bytes, sig_point, message);
+}
+
+#[test]
+// Canonical edge encodings must still be accepted: the identity (0, 1), and a
+// y-coordinate just below the modulus, q - 1 = 2^255 - 20 (with x = 0, so the
+// sign bit stays clear and the top byte is 0x7f).
+fn test_canonical_edge_encodings_still_accepted() {
+    let identity = Ed25519::from((Fq::from_limbs([0, 0, 0]), Fq::from_limbs([1, 0, 0])));
+    let encoded = super::compress(identity);
+    assert_eq(encoded[0], 1);
+    for i in 1..32 {
+        assert_eq(encoded[i], 0);
+    }
+
+    let just_below_q = Ed25519::from((
+        Fq::from_limbs([0, 0, 0]),
+        Fq::from_limbs([0xffffffffffffffffffffffffffffec, 0xffffffffffffffffffffffffffffff, 0x7fff]),
+    ));
+    let encoded = super::compress(just_below_q);
+    assert_eq(encoded[0], 0xec);
+    for i in 1..31 {
+        assert_eq(encoded[i], 0xff);
+    }
+    assert_eq(encoded[31], 0x7f);
+}
+
+#[test(should_fail)]
+// A y-coordinate stored as q + 1: the point (0, q + 1) aliases the identity
+// (0, 1), so without the reduction check the identity gets a second encoding.
+// Values above q fail inside BigNum's `validate_in_field` range check (q itself
+// is caught by the explicit `!= q` assert, as in the x test above).
+fn test_unreduced_y_rejected() {
+    let point = Ed25519::from((
+        Fq::from_limbs([0, 0, 0]),
+        Fq::from_limbs([0xffffffffffffffffffffffffffffee, 0xffffffffffffffffffffffffffffff, 0x7fff]),
+    ));
+    let _ = super::compress(point);
+}
